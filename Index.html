@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PropCalc — Australian Property Calculator 2025–26</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --card: #1c2128;
+  --border: #30363d;
+  --gold: #e3b341;
+  --gold-bg: rgba(227,179,65,0.08);
+  --green: #3fb68a;
+  --green-bg: rgba(63,182,138,0.08);
+  --red: #f85149;
+  --red-bg: rgba(248,81,73,0.08);
+  --blue: #58a6ff;
+  --blue-bg: rgba(88,166,255,0.08);
+  --purple: #bc8cff;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --text-muted: #484f58;
+  --owner1: #e3b341;
+  --owner2: #3fb68a;
+  --owner3: #58a6ff;
+  --owner4: #bc8cff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* HEADER */
+#header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px 0}
+#header-inner{max-width:1160px;margin:0 auto}
+#header-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+#header-title .subtitle{font-size:10px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
+#header-title h1{font-weight:600;font-size:clamp(16px,3vw,22px);color:var(--text)}
+#header-title h1 span{font-weight:300;color:var(--text-dim);font-size:.7em}
+.prop-type-btns{display:flex;gap:6px;flex-wrap:wrap}
+.prop-type-btn{padding:7px 14px;cursor:pointer;font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:20px;font-family:inherit;font-weight:400;transition:all .15s}
+.prop-type-btn.active{background:var(--gold);border-color:var(--gold);color:#0d1117;font-weight:600}
+
+/* KPI STRIP */
+#kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--border);border-radius:8px 8px 0 0;overflow:hidden}
+.kpi-cell{background:var(--card);padding:10px 8px;text-align:center}
+.kpi-cell .kpi-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.kpi-cell .kpi-val{font-size:clamp(11px,1.8vw,14px);font-weight:600}
+
+/* TABS */
+#tab-bar{display:flex;gap:1px;background:var(--border);margin-top:1px}
+.tab-btn{flex:1;background:var(--surface);border:none;border-bottom:2px solid transparent;color:var(--text-dim);padding:11px 4px;cursor:pointer;font-size:clamp(9px,1.2vw,11px);font-weight:400;letter-spacing:.04em;font-family:inherit;transition:all .15s;white-space:nowrap}
+.tab-btn.active{background:var(--bg);border-bottom-color:var(--gold);color:var(--gold);font-weight:600}
+
+/* BODY */
+#body{max-width:1160px;margin:0 auto;padding:20px 16px 60px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* TAB ACTIONS */
+.tab-actions{display:flex;gap:10px;justify-content:flex-end;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.btn-reset{padding:8px 20px;cursor:pointer;font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:7px;font-family:inherit;font-weight:500;transition:all .15s}
+.btn-calc{padding:8px 22px;cursor:pointer;font-size:12px;background:var(--gold);border:1px solid var(--gold);color:#0d1117;border-radius:7px;font-family:inherit;font-weight:700;transition:all .15s}
+
+/* GRID LAYOUTS */
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-2-auto{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+@media(max-width:800px){.grid-3{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}}
+
+/* SECTION */
+.section{margin-bottom:20px}
+.section-title{font-size:11px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-top:2px solid var(--border);border-radius:8px;padding:16px}
+
+/* KPI CARD */
+.kpi-card{background:var(--card);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:8px;padding:14px 15px}
+.kpi-card .kc-label{font-size:10px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em;font-weight:500}
+.kpi-card .kc-val{font-size:clamp(14px,2.5vw,20px);line-height:1.1;font-weight:600}
+.kpi-card .kc-sub{font-size:10px;color:var(--text-muted);margin-top:4px}
+
+/* ROW */
+.row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)}
+.row.indent{padding-left:14px;padding-top:5px;padding-bottom:5px}
+.row .row-label{font-size:12px;color:var(--text-dim)}
+.row .row-label.bold{font-size:13px;color:var(--text)}
+.row .row-sub{font-size:10px;color:var(--text-muted)}
+.row .row-val{font-size:12px;color:var(--text-dim);font-weight:400;margin-left:12px;flex-shrink:0}
+.row .row-val.bold{font-size:14px;font-weight:600}
+
+/* FIELD */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;font-weight:500}
+.field .input-wrap{position:relative}
+.field .pre{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:13px;pointer-events:none;z-index:1}
+.field .suf{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:12px;pointer-events:none}
+.field input{background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:9px 12px;font-size:14px;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
+.field input:focus{border-color:var(--gold)}
+.field input.has-pre{padding-left:28px}
+.field input.has-suf{padding-right:40px}
+.field .hint{font-size:11px;color:var(--green);margin-top:4px}
+.field .note{font-size:11px;color:var(--text-muted);margin-top:3px;line-height:1.5}
+
+/* SELECT */
+.field select{background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:9px 12px;font-size:14px;width:100%;outline:none;font-family:inherit;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+/* TOGGLE */
+.toggle{display:flex;gap:4px;margin-bottom:14px}
+.toggle-btn{flex:1;padding:8px 10px;cursor:pointer;font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:7px;font-family:inherit;font-weight:400;transition:all .15s}
+.toggle-btn.active{background:var(--gold);border-color:var(--gold);color:#0d1117;font-weight:600}
+
+/* INFO BOXES */
+.info-box{border-radius:8px;padding:14px;margin-bottom:14px}
+.info-box.gold{background:var(--gold-bg);border:1px solid var(--gold)}
+.info-box.blue{background:var(--blue-bg);border:1px solid var(--blue)}
+.info-box.green{background:var(--green-bg);border:1px solid var(--green)}
+.info-box.red{background:var(--red-bg);border:1px solid var(--red)}
+.info-box .ib-title{font-size:12px;font-weight:600;margin-bottom:4px}
+.info-box .ib-body{font-size:11px;line-height:1.6}
+
+/* CHARTS */
+.chart-wrap{position:relative;width:100%}
+.chart-wrap canvas{max-height:280px}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:11px}
+.data-table th{padding:8px 10px;text-align:right;color:var(--text-dim);font-weight:600;font-size:10px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.data-table td{padding:7px 10px;text-align:right}
+.data-table tr.highlight{background:var(--gold-bg);border:1px solid var(--gold)}
+.data-table tr.alt{background:var(--card)}
+
+/* CHECKLIST */
+.checklist-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);align-items:center}
+.checklist-item .ci-icon{font-size:14px;flex-shrink:0}
+.checklist-item .ci-label{font-size:12px}
+
+/* DISCLAIMER */
+.disclaimer{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:11px;color:var(--text-muted);line-height:1.8}
+
+/* OWNER CARDS */
+.owner-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px}
+
+/* NET PROCEEDS */
+.net-box{margin:14px 0;padding:14px;border-radius:8px}
+.net-box .nb-label{font-size:11px;color:var(--text-dim);margin-bottom:6px}
+.net-box .nb-val{font-size:24px;font-weight:700}
+.net-box .nb-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+/* LMI warning */
+.lmi-warning{background:var(--gold-bg);border:1px solid var(--gold);border-radius:7px;padding:10px 12px;margin-top:4px;font-size:12px}
+
+/* BRACKET TABLE */
+.bracket-row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:5px;margin-bottom:2px}
+.owner-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.owner-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px}
+
+/* GEARING BOX */
+.gearing-box{margin:14px 0;padding:14px;border-radius:8px;font-size:12px;line-height:1.7}
+
+/* NUMBER OF OWNERS */
+.num-owners-btns{display:flex;gap:6px;margin-bottom:6px}
+.num-owners-btn{flex:1;padding:10px 4px;cursor:pointer;font-size:14px;font-weight:700;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;font-family:inherit;transition:all .15s}
+
+/* ATO CALC RESULT */
+.ato-result{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-top:4px}
+.ato-result .ar-label{font-size:11px;color:var(--text-dim)}
+.ato-result .ar-val{font-size:20px;color:var(--blue);font-weight:700;margin:4px 0}
+.ato-result .ar-formula{font-size:10px;color:var(--text-muted)}
+
+/* COST BASE CARD */
+.cost-base-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;border-top:2px solid var(--gold)}
+.cost-base-card .cb-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.cost-base-card .cb-val{font-size:22px;color:var(--gold);font-weight:700}
+.cost-base-card .cb-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+/* OWNER BREAKDOWN GRID */
+.owner-breakdown-grid{display:grid;gap:8px;margin-top:12px}
+.owner-breakdown-card{background:var(--card);border-radius:6px;padding:8px 10px}
+.obc-title{font-size:10px;font-weight:600;margin-bottom:3px}
+.obc-share{font-size:11px;color:var(--text-dim)}
+.obc-result{font-size:13px;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="header-inner">
+    <div id="header-top">
+      <div id="header-title">
+        <div class="subtitle">Australian Property Calculator · 2025–26</div>
+        <h1>PropCalc <span>Investment &amp; Owner-Occupied</span></h1>
+      </div>
+      <div class="prop-type-btns">
+        <button class="prop-type-btn active" data-type="investment" onclick="setPropType('investment')">🏢 Investment</button>
+        <button class="prop-type-btn" data-type="ppor" onclick="setPropType('ppor')">🏠 Owner-Occupied</button>
+        <button class="prop-type-btn" data-type="partial" onclick="setPropType('partial')">🏡 Partial Rental</button>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div id="kpi-strip">
+      <div class="kpi-cell"><div class="kpi-label">Loan Amount</div><div class="kpi-val" id="kpi-loan" style="color:var(--blue)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Fnt Repayment</div><div class="kpi-val" id="kpi-fnt" style="color:var(--text)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Stamp Duty</div><div class="kpi-val" id="kpi-stamp" style="color:var(--red)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Net Rent/yr</div><div class="kpi-val" id="kpi-rent" style="color:var(--green)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Rental P&amp;L</div><div class="kpi-val" id="kpi-pl" style="color:var(--red)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Tax Saving/yr</div><div class="kpi-val" id="kpi-taxsav" style="color:var(--gold)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Gross Yield</div><div class="kpi-val" id="kpi-yield" style="color:var(--text)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">CGT on Sale</div><div class="kpi-val" id="kpi-cgt" style="color:var(--red)">—</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Net Proceeds</div><div class="kpi-val" id="kpi-proceeds" style="color:var(--green)">—</div></div>
+    </div>
+
+    <!-- Tab bar -->
+    <div id="tab-bar">
+      <button class="tab-btn active" onclick="setTab(0)">Property &amp; Loan</button>
+      <button class="tab-btn" onclick="setTab(1)">Income &amp; Costs</button>
+      <button class="tab-btn" onclick="setTab(2)">Tax &amp; Gearing</button>
+      <button class="tab-btn" onclick="setTab(3)">CGT &amp; Sale</button>
+      <button class="tab-btn" onclick="setTab(4)">Projections</button>
+      <button class="tab-btn" onclick="setTab(5)">Summary</button>
+    </div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div id="body">
+
+  <!-- TAB 0: PROPERTY & LOAN -->
+  <div class="tab-panel active" id="tab0">
+    <div class="tab-actions">
+      <button class="btn-reset" onclick="resetTab(0)">↺ Reset to Default</button>
+      <button class="btn-calc" onclick="calculate()">⟳ Calculate</button>
+    </div>
+    <div class="grid-3">
+      <!-- LOAN DETAILS -->
+      <div>
+        <div class="section">
+          <div class="section-title">Loan Details</div>
+          <div class="field"><label>Purchase Price</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="purchasePrice" value="935000" step="1000" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Deposit</label><div class="input-wrap"><span class="suf">%</span><input class="has-suf" type="number" id="depositPct" value="20" step="0.5" min="0" oninput="calculate()"></div><div class="hint" id="f-deposit-hint"></div></div>
+          <div class="field"><label>Interest Rate</label><div class="input-wrap"><span class="suf">% p.a.</span><input class="has-suf" type="number" id="interestRate" value="6.22" step="0.05" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Loan Term</label><div class="input-wrap"><span class="suf">years</span><input class="has-suf" type="number" id="loanYears" value="30" step="1" min="1" oninput="calculate()"></div></div>
+          <div class="field"><label>Interest-Only Period</label><div class="input-wrap"><span class="suf">years</span><input class="has-suf" type="number" id="ioYears" value="0" step="1" min="0" oninput="calculate()"></div><div class="note">Enter 0 for standard P&amp;I from day 1</div></div>
+          <div class="field"><label>Offset Account Balance</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="offsetBalance" value="0" step="1000" min="0" oninput="calculate()"></div><div class="hint" id="f-offset-hint"></div></div>
+          <div id="lmi-warning" class="lmi-warning" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- BUYING COSTS -->
+      <div>
+        <div class="section">
+          <div class="section-title">Buying Costs</div>
+          <div class="info-box gold">
+            <div class="ib-title" style="color:var(--gold)">Stamp Duty</div>
+            <div class="ib-body" style="color:var(--text-dim);margin-bottom:12px">Look up your exact stamp duty on your state's revenue office website, then enter the final figure below.</div>
+            <div class="field"><label>Your State / Territory</label><select id="selectedState" onchange="calculate()"><option>QLD</option><option>NSW</option><option>VIC</option><option>SA</option><option>WA</option><option>ACT</option><option>NT</option><option>TAS</option></select></div>
+            <div class="field"><label>Stamp Duty Amount</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="stampDutyAmount" value="29925" step="100" min="0" oninput="calculate()"></div><div class="hint">Enter the figure from your state's OSR website</div></div>
+            <div class="field"><label>FHOG / First Home Concession</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="fhogGrant" value="0" step="100" min="0" oninput="calculate()"></div><div class="note">If eligible, enter your grant or duty concession amount</div></div>
+            <div id="fhog-hint" style="font-size:11px;color:var(--green);display:none"></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px">🔗 <a href="#" id="stamp-link" target="_blank">Find state stamp duty calculator →</a></div>
+          </div>
+          <div class="field"><label>Conveyancing / Legals</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="conveyancing" value="2500" step="100" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Building Inspection</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="buildInsp" value="600" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Pest Inspection</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="pestInsp" value="400" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Loan Establishment Fee</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="loanFee" value="800" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Other Buying Costs</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="otherBuying" value="900" step="50" min="0" oninput="calculate()"></div><div class="note">Title searches, registration, other misc.</div></div>
+        </div>
+      </div>
+
+      <!-- REPAYMENT SUMMARY -->
+      <div>
+        <div class="section">
+          <div class="section-title">Repayment Summary</div>
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="kpi-card" style="border-top-color:var(--text)"><div class="kc-label">Monthly (P&amp;I)</div><div class="kc-val" id="kc-monthly" style="color:var(--text)">—</div></div>
+            <div class="kpi-card" style="border-top-color:var(--gold)"><div class="kc-label">Fortnightly</div><div class="kc-val" id="kc-fnt" style="color:var(--gold)">—</div></div>
+            <div class="kpi-card" style="border-top-color:var(--red)"><div class="kc-label">Total Interest</div><div class="kc-val" id="kc-totalint" style="color:var(--red)">—</div></div>
+            <div class="kpi-card" style="border-top-color:var(--red)"><div class="kc-label">Total Buying Costs</div><div class="kc-val" id="kc-totalbuying" style="color:var(--red)">—</div></div>
+          </div>
+          <div class="cost-base-card">
+            <div class="cb-label">Cost Base (for CGT)</div>
+            <div class="cb-val" id="cb-val">—</div>
+            <div class="cb-sub">Purchase price + all buying costs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 0 CHARTS -->
+    <div style="margin-top:8px">
+      <div class="section">
+        <div class="section-title" style="color:var(--blue)">📊 Loan vs Equity — Full Amortisation Schedule</div>
+        <div class="chart-wrap"><canvas id="chart-amort"></canvas></div>
+      </div>
+      <div class="grid-2" style="margin-top:4px">
+        <div class="section">
+          <div class="section-title" style="color:var(--gold)">📊 Annual Interest vs Principal</div>
+          <div class="chart-wrap"><canvas id="chart-intprin"></canvas></div>
+        </div>
+        <div class="section">
+          <div class="section-title" style="color:var(--purple)">📊 Buying Costs Breakdown</div>
+          <div class="chart-wrap"><canvas id="chart-buying-pie"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 1: INCOME & COSTS -->
+  <div class="tab-panel" id="tab1">
+    <div class="tab-actions">
+      <button class="btn-reset" onclick="resetTab(1)">↺ Reset to Default</button>
+      <button class="btn-calc" onclick="calculate()">⟳ Calculate</button>
+    </div>
+    <div class="grid-3">
+      <div>
+        <div class="section">
+          <div class="section-title">Rental Income</div>
+          <div id="ppor-notice" style="display:none" class="info-box gold">
+            <div class="ib-title" style="color:var(--gold)">Owner-Occupied Property</div>
+            <div class="ib-body" style="color:var(--text-dim)">No rental income applies. Switch to "Investment" or "Partial Rental" to add income.</div>
+          </div>
+          <div id="rental-income-fields">
+            <div class="field"><label>Weekly Rent</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="weeklyRent" value="230" step="5" min="0" oninput="calculate()"></div><div class="hint" id="f-rent-hint"></div></div>
+            <div class="field"><label>Vacancy Allowance</label><div class="input-wrap"><span class="suf">weeks/yr</span><input class="has-suf" type="number" id="vacancyWeeks" value="2" step="0.5" min="0" oninput="calculate()"></div><div class="hint" id="f-vacancy-hint"></div></div>
+            <div class="field"><label>Property Management Fee</label><div class="input-wrap"><span class="suf">%</span><input class="has-suf" type="number" id="mgmtPct" value="0" step="0.5" min="0" oninput="calculate()"></div><div class="note">0% if self-managed · 7–10% if agent managed</div></div>
+          </div>
+          <div id="rent-kpi-grid" class="grid-2" style="margin-top:10px;display:none">
+            <div class="kpi-card" style="border-top-color:var(--green)"><div class="kc-label">Gross Rent/yr</div><div class="kc-val" id="kc-grossrent" style="color:var(--green)">—</div></div>
+            <div class="kpi-card" style="border-top-color:var(--green)"><div class="kc-label">Net Rent/yr</div><div class="kc-val" id="kc-netrent" style="color:var(--green)">—</div></div>
+            <div class="kpi-card" style="border-top-color:var(--blue)"><div class="kc-label">Gross Yield</div><div class="kc-val" id="kc-grossyield" style="color:var(--blue)">—</div></div>
+            <div class="kpi-card" style="border-top-color:var(--blue)"><div class="kc-label">Net Yield</div><div class="kc-val" id="kc-netyield" style="color:var(--blue)">—</div></div>
+          </div>
+        </div>
+
+        <!-- APPORTIONMENT (partial only) -->
+        <div id="apportionment-section" style="display:none">
+          <div class="section">
+            <div class="section-title" style="color:var(--blue)">Rental Apportionment</div>
+            <div class="toggle">
+              <button class="toggle-btn active" id="tog-manual" onclick="setApportionMode('manual')">✏️ Manual</button>
+              <button class="toggle-btn" id="tog-guided" onclick="setApportionMode('guided')">🧮 ATO Calculator</button>
+            </div>
+            <div id="guided-panel" style="display:none" class="info-box blue">
+              <div class="ib-title" style="color:var(--blue)">🧮 ATO Apportionment Guide</div>
+              <div class="ib-body" style="color:var(--text-dim);margin-bottom:10px"><strong style="color:var(--text)">Formula:</strong> Private rooms % + Shared areas % × 50%<br><em>Example:</em> 1 of 4 bedrooms rented = 25% private. Shared areas = 40% → 40% × 50% = 20%. Total = 45%.</div>
+              <div class="field"><label>Private / exclusively rented rooms (% of floor area)</label><div class="input-wrap"><span class="suf">%</span><input class="has-suf" type="number" id="privateRoomPct" value="15" step="0.5" min="0" oninput="calculate()"></div><div class="note">Rented bedroom(s) ÷ total house area × 100</div></div>
+              <div class="field"><label>Shared areas tenant accesses (% of floor area)</label><div class="input-wrap"><span class="suf">%</span><input class="has-suf" type="number" id="sharedAreaPct" value="23" step="0.5" min="0" oninput="calculate()"></div><div class="note">Kitchen, lounge, bathrooms etc. — counted at 50%</div></div>
+              <div class="ato-result">
+                <div class="ar-label">Calculated deductible %:</div>
+                <div class="ar-val" id="ato-calc-pct">—</div>
+                <div class="ar-formula" id="ato-calc-formula">—</div>
+                <button onclick="applyAtoResult()" style="margin-top:8px;padding:6px 14px;background:var(--blue);border:none;border-radius:6px;color:#0d1117;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Apply this % →</button>
+              </div>
+            </div>
+            <div class="field"><label>Rental Deductible Area %</label><div class="input-wrap"><span class="suf">%</span><input class="has-suf" type="number" id="rentalApportion" value="26.6" step="0.1" min="0" oninput="calculate()"></div><div class="note">ATO method: private room % + shared areas × 50%</div></div>
+            <div id="apportion-badge" style="font-size:11px;background:var(--blue-bg);border-radius:6px;padding:8px 10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section">
+          <div class="section-title">Rates &amp; Insurance (Annual)</div>
+          <div class="field"><label>Council Rates</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="councilRates" value="2200" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Water Rates</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="waterRates" value="1200" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Home Insurance</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="insurance" value="2400" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Landlord Insurance</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="landlordIns" value="0" step="50" min="0" oninput="calculate()"></div><div class="note">Recommended for investment/rental properties</div></div>
+          <div class="field"><label>Strata / Body Corporate</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="strata" value="0" step="50" min="0" oninput="calculate()"></div><div class="note">Annual levy if applicable</div></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Maintenance</div>
+          <div class="field"><label>Repairs &amp; Maintenance</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="maintenance" value="800" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Repairs Reserve</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="repairsReserve" value="500" step="50" min="0" oninput="calculate()"></div><div class="note">Buffer for unexpected repairs</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section">
+          <div class="section-title">Professional Costs</div>
+          <div class="field"><label>Accounting / Tax Agent</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="accountingFees" value="500" step="50" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Depreciation Claim</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="deprecClaim" value="1200" step="50" min="0" oninput="calculate()"></div><div class="note">Annual deduction from depreciation schedule</div></div>
+          <div class="field"><label>Shared Utilities</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="electricityShared" value="3600" step="50" min="0" oninput="calculate()"></div><div class="note">Electricity, internet etc.</div></div>
+          <div class="field"><label>Other Ongoing Costs</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="otherOngoing" value="500" step="50" min="0" oninput="calculate()"></div></div>
+        </div>
+        <div class="card" style="border-top-color:var(--red)">
+          <div class="row"><div><span class="row-label">Total ongoing costs (full)</span></div><span class="row-val" id="row-ongoing" style="color:var(--red)">—</span></div>
+          <div class="row" id="row-deductible-wrap"><div><span class="row-label bold">Deductible portion</span></div><span class="row-val bold" id="row-deductible" style="color:var(--gold)">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1 CHARTS -->
+    <div style="margin-top:16px">
+      <div class="grid-2">
+        <div class="section">
+          <div class="section-title" style="color:var(--blue)">📊 Cost Breakdown (Deductible Portion)</div>
+          <div class="chart-wrap"><canvas id="chart-cost-pie"></canvas></div>
+        </div>
+        <div class="section">
+          <div class="section-title" style="color:var(--green)">📊 Income vs Expenses Summary</div>
+          <div class="chart-wrap"><canvas id="chart-income-bar"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: TAX & GEARING -->
+  <div class="tab-panel" id="tab2">
+    <div class="tab-actions">
+      <button class="btn-reset" onclick="resetTab(2)">↺ Reset to Default</button>
+      <button class="btn-calc" onclick="calculate()">⟳ Calculate</button>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="section">
+          <div class="section-title">Ownership &amp; Income Details</div>
+          <div class="info-box blue">
+            <div class="ib-title" style="color:var(--blue)">⚠️ Individual Tax Assessment (ATO)</div>
+            <div class="ib-body" style="color:var(--text-dim)">In Australia, income tax is assessed <strong style="color:var(--text)">individually</strong> — not on combined household income. Each co-owner's share of rental profit/loss is taxed at <strong style="color:var(--text)">their own marginal rate</strong>. Select the number of owners below.</div>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-weight:500">Number of property owners</div>
+            <div class="num-owners-btns" id="num-owners-btns"></div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:6px" id="owners-split-note"></div>
+          </div>
+          <div id="owner-income-fields"></div>
+          <div class="info-box gold" style="font-size:11px;margin-bottom:14px">
+            <span style="color:var(--text-dim)">Combined household income: </span>
+            <strong id="combined-income" style="color:var(--gold)">—</strong>
+            <span style="color:var(--text-muted);margin-left:8px">(reference only — tax is individual)</span>
+          </div>
+          <div class="field"><label>Medicare Levy</label><div class="input-wrap"><span class="suf">%</span><input class="has-suf" type="number" id="medicarePct" value="2" step="0.5" min="0" oninput="calculate()"></div><div class="note">Standard 2% per person. Low income earners may have a reduced levy.</div></div>
+
+          <!-- ATO Bracket Table -->
+          <div class="card">
+            <div style="font-size:10px;color:var(--text-dim);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">2025–26 ATO Tax Brackets</div>
+            <div class="owner-legend" id="owner-legend"></div>
+            <div id="bracket-table"></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section">
+          <div class="section-title">Rental Profit &amp; Loss</div>
+          <div class="row"><div><span class="row-label">Gross rental income</span></div><span class="row-val" id="row-grossrent" style="color:var(--green)">—</span></div>
+          <div class="row indent"><div><span class="row-label">Less: vacancy</span></div><span class="row-val" id="row-vacancy" style="color:var(--red)">—</span></div>
+          <div class="row indent"><div><span class="row-label">Less: management fees</span></div><span class="row-val" id="row-mgmt" style="color:var(--red)">—</span></div>
+          <div class="row"><div><span class="row-label bold">Net rental income</span></div><span class="row-val bold" id="row-netrent" style="color:var(--green)">—</span></div>
+          <div class="row"><div><span class="row-label">Less: mortgage interest</span><div class="row-sub" id="row-int-sub"></div></div><span class="row-val" id="row-intdeduct" style="color:var(--red)">—</span></div>
+          <div class="row"><div><span class="row-label">Less: ongoing costs</span></div><span class="row-val" id="row-costdeduct" style="color:var(--red)">—</span></div>
+          <div class="row"><div><span class="row-label bold">Net rental result</span></div><span class="row-val bold" id="row-rentalpl">—</span></div>
+
+          <div class="gearing-box" id="gearing-box"></div>
+
+          <div class="owner-breakdown-grid" id="owner-breakdown-grid"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Annual Cash Flow</div>
+          <div class="row"><div><span class="row-label">Net rent received</span></div><span class="row-val" id="cf-netrent" style="color:var(--green)">—</span></div>
+          <div class="row"><div><span class="row-label">Less: mortgage repayments</span></div><span class="row-val" id="cf-mort" style="color:var(--red)">—</span></div>
+          <div class="row"><div><span class="row-label bold">Pre-tax cash flow</span></div><span class="row-val bold" id="cf-pretax">—</span></div>
+          <div class="row"><div><span class="row-label" id="cf-taxlabel">Tax saving</span></div><span class="row-val" id="cf-taxval">—</span></div>
+          <div class="row"><div><span class="row-label bold">Post-tax cash flow</span></div><span class="row-val bold" id="cf-posttax">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 CHARTS -->
+    <div style="margin-top:8px">
+      <div class="grid-2">
+        <div class="section" id="chart-cumrent-section">
+          <div class="section-title" style="color:var(--gold)">📊 Cumulative Rent vs Tax Savings (10 Years)</div>
+          <div class="chart-wrap"><canvas id="chart-cumrent"></canvas></div>
+        </div>
+        <div class="section">
+          <div class="section-title" style="color:var(--blue)">📊 Owner Tax Rate Comparison</div>
+          <div class="chart-wrap"><canvas id="chart-taxrate"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: CGT & SALE -->
+  <div class="tab-panel" id="tab3">
+    <div class="tab-actions">
+      <button class="btn-reset" onclick="resetTab(3)">↺ Reset to Default</button>
+      <button class="btn-calc" onclick="calculate()">⟳ Calculate</button>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="section">
+          <div class="section-title">Sale Details</div>
+          <div class="field"><label>Expected Sale Price</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="salePrice" value="1250000" step="1000" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Agent Commission</label><div class="input-wrap"><span class="suf">%</span><input class="has-suf" type="number" id="agentCommPct" value="2.5" step="0.1" min="0" oninput="calculate()"></div><div class="hint" id="f-agentfee-hint"></div></div>
+          <div class="field"><label>Selling Legals / Conveyancing</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="sellLegals" value="3000" step="100" min="0" oninput="calculate()"></div></div>
+          <div class="field"><label>Capital Improvements (since purchase)</label><div class="input-wrap"><span class="pre">$</span><input class="has-pre" type="number" id="capitalImprovements" value="0" step="1000" min="0" oninput="calculate()"></div><div class="note">Renovations, extensions etc. add to your cost base</div></div>
+          <div class="field"><label>Years Held</label><div class="input-wrap"><span class="suf">years</span><input class="has-suf" type="number" id="yearsHeld" value="5" step="1" min="0" oninput="calculate()"></div><div class="hint" id="f-cgt-discount-hint"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="section">
+          <div class="section-title">Capital Gains Summary</div>
+          <div class="row"><div><span class="row-label">Sale price</span></div><span class="row-val" id="cgt-saleprice" style="color:var(--green)">—</span></div>
+          <div class="row indent"><div><span class="row-label">Less: selling costs</span></div><span class="row-val" id="cgt-sellcosts" style="color:var(--red)">—</span></div>
+          <div class="row indent"><div><span class="row-label">Less: cost base</span></div><span class="row-val" id="cgt-costbase" style="color:var(--red)">—</span></div>
+          <div class="row"><div><span class="row-label bold">Gross capital gain</span></div><span class="row-val bold" id="cgt-grossgain">—</span></div>
+          <div class="row indent" id="cgt-apportion-row" style="display:none"><div><span class="row-label" id="cgt-apportion-label">Apportioned</span></div><span class="row-val" id="cgt-apportion-val" style="color:var(--text-dim)">—</span></div>
+          <div class="row indent" id="cgt-discount-row" style="display:none"><div><span class="row-label">50% CGT discount (12+ months)</span></div><span class="row-val" id="cgt-discount-val" style="color:var(--gold)">—</span></div>
+          <div class="row"><div><span class="row-label bold">Taxable capital gain</span></div><span class="row-val bold" id="cgt-taxable" style="color:var(--gold)">—</span></div>
+          <div class="row"><div><span class="row-label bold">CGT payable</span></div><span class="row-val bold" id="cgt-payable" style="color:var(--red)">—</span></div>
+          <div class="net-box green-bg" id="net-proceeds-box" style="background:var(--green-bg);border:1px solid var(--green)">
+            <div class="nb-label">After repaying loan &amp; paying CGT:</div>
+            <div class="nb-val" id="net-proceeds-val" style="color:var(--green)">—</div>
+            <div class="nb-sub">Net sale proceeds in your pocket</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 CHARTS -->
+    <div style="margin-top:8px">
+      <div class="grid-2">
+        <div class="section">
+          <div class="section-title" style="color:var(--gold)">📊 Sale Proceeds Waterfall</div>
+          <div class="chart-wrap"><canvas id="chart-waterfall"></canvas></div>
+        </div>
+        <div class="section">
+          <div class="section-title" style="color:var(--purple)">📊 Capital Gain Composition</div>
+          <div class="chart-wrap"><canvas id="chart-cgt-pie"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: PROJECTIONS -->
+  <div class="tab-panel" id="tab4">
+    <div class="tab-actions">
+      <button class="btn-reset" onclick="resetTab(4)">↺ Reset to Default</button>
+      <button class="btn-calc" onclick="calculate()">⟳ Calculate</button>
+    </div>
+    <div class="grid-3" style="margin-bottom:20px">
+      <div class="card" style="border-top-color:var(--gold)">
+        <div class="field"><label>Capital Growth Rate</label><div class="input-wrap"><span class="suf">% p.a.</span><input class="has-suf" type="number" id="capGrowth" value="5" step="0.5" min="0" oninput="calculate()"></div><div class="note">Historical avg 5–7% for major Australian cities</div></div>
+      </div>
+      <div class="card" style="border-top-color:var(--green)">
+        <div class="field"><label>Rent Growth Rate</label><div class="input-wrap"><span class="suf">% p.a.</span><input class="has-suf" type="number" id="rentGrowth" value="3" step="0.5" min="0" oninput="calculate()"></div><div class="note">Historical avg 2–4% per year</div></div>
+      </div>
+      <div class="card" style="border-top-color:var(--blue)">
+        <div class="field"><label>Cost Inflation Rate</label><div class="input-wrap"><span class="suf">% p.a.</span><input class="has-suf" type="number" id="costInflation" value="2.5" step="0.5" min="0" oninput="calculate()"></div><div class="note">Rate at which ongoing costs increase each year</div></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="section">
+        <div class="section-title" style="color:var(--gold)">📊 Property Value &amp; Equity Growth</div>
+        <div class="chart-wrap"><canvas id="chart-proj-value"></canvas></div>
+      </div>
+      <div class="section">
+        <div class="section-title" style="color:var(--green)">📊 Cumulative Cash Flow</div>
+        <div class="chart-wrap"><canvas id="chart-proj-cf"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Year-by-Year Summary</div>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="proj-table">
+          <thead><tr><th>Year</th><th>Property Value</th><th>Loan Balance</th><th>Equity</th><th>Net Rent</th><th>Net Cash Flow</th><th>Cum. Net CF</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: SUMMARY -->
+  <div class="tab-panel" id="tab5">
+    <div id="summary-kpi-grid" class="grid-2-auto"></div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="section">
+        <div class="section-title" style="color:var(--gold)">📊 Overall Cash Flow Snapshot</div>
+        <div class="chart-wrap"><canvas id="chart-summary-cf"></canvas></div>
+      </div>
+      <div class="section">
+        <div class="section-title" style="color:var(--blue)">📊 10-Year Value &amp; Equity Trajectory</div>
+        <div class="chart-wrap"><canvas id="chart-summary-equity"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Investor Checklist</div>
+      <div id="checklist"></div>
+    </div>
+
+    <div class="disclaimer">
+      ⚠️ <strong style="color:var(--text-dim)">Disclaimer:</strong> This calculator is for general modelling purposes only and does not constitute financial, tax, or legal advice. Tax rates are based on 2025–26 ATO published schedules. Stamp duty figures are entered manually — always verify with your state revenue office before settlement. Capital growth and rent projections are illustrative estimates only. Consult a registered tax agent and financial adviser before making investment decisions.
+    </div>
+  </div>
+
+</div><!-- end body -->
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let propType = 'investment';
+let currentTab = 0;
+let numOwners = 2;
+let ownerIncomes = [90000,125000,0,0];
+let apportionMode = 'manual';
+let C; // computed values cache
+
+const OWNER_COLORS = ['#e3b341','#3fb68a','#58a6ff','#bc8cff'];
+
+// Chart instances
+const charts = {};
+
+// ── FORMATTERS ─────────────────────────────────────────────────────────────────
+function fmt(n, dec=0) {
+  if (n===undefined||n===null||isNaN(n)) return '$0';
+  const s = '$' + Math.abs(n).toLocaleString('en-AU',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  return n < 0 ? `(${s})` : s;
+}
+function fmtK(n) {
+  if (!n||isNaN(n)) return '$0';
+  const a = Math.abs(n);
+  const s = a>=1e6 ? `$${(a/1e6).toFixed(1)}M` : a>=1e3 ? `$${(a/1e3).toFixed(0)}k` : `$${a.toFixed(0)}`;
+  return n < 0 ? `(${s})` : s;
+}
+function pct(n, d=1) { return `${(+n||0).toFixed(d)}%`; }
+
+// ── MORTGAGE ───────────────────────────────────────────────────────────────────
+function calcMortgage(principal, rate, years, ioYears=0) {
+  if (!principal||!rate||!years) return {monthly:0,fortnightly:0,totalInterest:0,piMonthly:0,ioMonthly:0};
+  const r=rate/100/12, n=years*12;
+  const piMonthly = principal*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+  const ioMonthly = principal*r;
+  const piYears = years-ioYears;
+  const totalRepaid = ioYears>0 ? (ioMonthly*ioYears*12)+(piMonthly*piYears*12) : piMonthly*n;
+  return {monthly:ioYears>0?ioMonthly:piMonthly, fortnightly:(ioYears>0?ioMonthly:piMonthly)*12/26, totalInterest:totalRepaid-principal, piMonthly, ioMonthly};
+}
+function buildAmort(principal, rate, years, ioYears=0) {
+  if (!principal||!rate||!years) return [];
+  const r=rate/100/12, n=years*12;
+  const piMonthly = principal*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+  const ioMonthly = principal*r;
+  let balance = principal; const data = [];
+  for (let yr=1; yr<=Math.min(years,40); yr++) {
+    let yInt=0,yPrin=0; const isIO = yr<=ioYears;
+    for (let m=0; m<12; m++) {
+      const ip=balance*r, pp=isIO?0:(piMonthly-ip);
+      yInt+=ip; yPrin+=pp; balance=Math.max(0,balance-pp);
+    }
+    data.push({year:yr,balance:Math.round(balance),interest:Math.round(yInt),principal:Math.round(yPrin)});
+  }
+  return data;
+}
+
+// ── TAX ────────────────────────────────────────────────────────────────────────
+const TAX_BRACKETS = [
+  {from:0,to:18200,rate:0},
+  {from:18200,to:45000,rate:19},
+  {from:45000,to:135000,rate:32.5},
+  {from:135000,to:190000,rate:37},
+  {from:190000,to:null,rate:45},
+];
+function getMarginalRate(income) {
+  for (let i=TAX_BRACKETS.length-1;i>=0;i--) if(income>TAX_BRACKETS[i].from) return TAX_BRACKETS[i].rate/100;
+  return 0;
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────────
+function v(id) { return parseFloat(document.getElementById(id)?.value)||0; }
+function el(id) { return document.getElementById(id); }
+function setText(id, text) { const e=el(id); if(e) e.textContent=text; }
+function setHTML(id, html) { const e=el(id); if(e) e.innerHTML=html; }
+function setStyle(id, prop, val) { const e=el(id); if(e) e.style[prop]=val; }
+function show(id) { setStyle(id,'display',''); }
+function hide(id) { setStyle(id,'display','none'); }
+
+// ── COMPUTE ────────────────────────────────────────────────────────────────────
+function compute() {
+  const purchasePrice = v('purchasePrice');
+  const depositPct = v('depositPct');
+  const interestRate = v('interestRate');
+  const loanYears = v('loanYears');
+  const ioYears = v('ioYears');
+  const offsetBalance = v('offsetBalance');
+  const stampDutyAmount = v('stampDutyAmount');
+  const fhogGrant = v('fhogGrant');
+  const conveyancing = v('conveyancing');
+  const buildInsp = v('buildInsp');
+  const pestInsp = v('pestInsp');
+  const loanFee = v('loanFee');
+  const otherBuying = v('otherBuying');
+  const capitalImprovements = v('capitalImprovements');
+  const weeklyRent = v('weeklyRent');
+  const vacancyWeeks = v('vacancyWeeks');
+  const mgmtPct = v('mgmtPct');
+  const rentalApportion = v('rentalApportion');
+  const privateRoomPct = v('privateRoomPct');
+  const sharedAreaPct = v('sharedAreaPct');
+  const councilRates = v('councilRates');
+  const waterRates = v('waterRates');
+  const insurance = v('insurance');
+  const landlordIns = v('landlordIns');
+  const strata = v('strata');
+  const maintenance = v('maintenance');
+  const repairsReserve = v('repairsReserve');
+  const deprecClaim = v('deprecClaim');
+  const accountingFees = v('accountingFees');
+  const electricityShared = v('electricityShared');
+  const otherOngoing = v('otherOngoing');
+  const medicarePct = v('medicarePct');
+  const salePrice = v('salePrice');
+  const agentCommPct = v('agentCommPct');
+  const sellLegals = v('sellLegals');
+  const yearsHeld = v('yearsHeld');
+  const capGrowth = v('capGrowth');
+  const rentGrowth = v('rentGrowth');
+  const costInflation = v('costInflation');
+
+  const isPPOR = propType==='ppor';
+  const isPartial = propType==='partial';
+  const isInvestment = propType==='investment';
+
+  const deposit = purchasePrice*(depositPct/100);
+  const loanAmt = purchasePrice-deposit;
+  const effPrin = Math.max(0,loanAmt-offsetBalance);
+  const lvr = purchasePrice>0?(loanAmt/purchasePrice)*100:0;
+  const lmiAmt = lvr>80?loanAmt*0.02:0;
+  const mort = calcMortgage(effPrin,interestRate,loanYears,ioYears);
+  const amort = buildAmort(effPrin,interestRate,loanYears,ioYears);
+  const annualInt = effPrin*(interestRate/100);
+  const annualMort = mort.monthly*12;
+
+  const stampDuty = Math.max(0,stampDutyAmount-fhogGrant);
+  const totalBuying = stampDuty+conveyancing+buildInsp+pestInsp+loanFee+otherBuying+lmiAmt;
+  const costBase = purchasePrice+totalBuying+capitalImprovements;
+
+  const guidedApportion = Math.min(100, privateRoomPct + sharedAreaPct*0.5);
+  const apportion = isPartial?(rentalApportion/100):isInvestment?1:0;
+
+  const n = numOwners;
+  const margRates = ownerIncomes.slice(0,n).map(getMarginalRate);
+  const effRates = margRates.map(r => r + medicarePct/100);
+  const blendedEffRate = effRates.reduce((s,r)=>s+r,0)/n;
+
+  const grossRent = isPPOR?0:weeklyRent*52;
+  const vacancyLoss = isPPOR?0:weeklyRent*vacancyWeeks;
+  const netRent = grossRent-vacancyLoss;
+  const mgmtFees = netRent*(mgmtPct/100);
+  const effectiveNetRent = netRent-mgmtFees;
+
+  const ongoingFull = councilRates+waterRates+insurance+landlordIns+strata+
+    maintenance+repairsReserve+deprecClaim+accountingFees+electricityShared+otherOngoing+mgmtFees;
+
+  const intDeduction = annualInt*apportion;
+  const costDeduction = ongoingFull*apportion;
+  const totalDeduct = intDeduction+costDeduction;
+
+  const rentalPL = effectiveNetRent-totalDeduct;
+  const isNegGeared = rentalPL<0;
+
+  const sharePerOwner = rentalPL/n;
+  const ownerTaxEffects = ownerIncomes.slice(0,n).map((income,i) => {
+    const share = sharePerOwner;
+    const taxSaving = share<0?Math.abs(share)*effRates[i]:0;
+    const extraTax = share>0?share*effRates[i]:0;
+    return {income,margRate:margRates[i],effRate:effRates[i],share,taxSaving,extraTax};
+  });
+  const taxSaving = ownerTaxEffects.reduce((s,o)=>s+o.taxSaving,0);
+  const extraTax = ownerTaxEffects.reduce((s,o)=>s+o.extraTax,0);
+  const effRate = blendedEffRate;
+
+  const cashPreTax = effectiveNetRent-annualMort;
+  const cashPostTax = cashPreTax+taxSaving-extraTax;
+  const grossYield = purchasePrice>0?(grossRent/purchasePrice)*100:0;
+  const netYield = purchasePrice>0?(effectiveNetRent/purchasePrice)*100:0;
+
+  const agentFee = salePrice*(agentCommPct/100);
+  const totalSellCosts = agentFee+sellLegals;
+  const grossGain = salePrice-totalSellCosts-costBase;
+  const cgtDiscount = yearsHeld>=1?0.5:1;
+  const taxableGain = Math.max(0,grossGain)*apportion*cgtDiscount;
+  const cgtPayable = Math.max(0,taxableGain*effRate);
+  const netSaleProc = salePrice-totalSellCosts-loanAmt-cgtPayable;
+
+  const projYears = Math.min(Math.max(yearsHeld,10),30);
+  const projectionData = Array.from({length:projYears},(_,i) => {
+    const yr=i+1;
+    const projVal = purchasePrice*Math.pow(1+capGrowth/100,yr);
+    const loanBal = amort[yr-1]?.balance??loanAmt;
+    const equity = projVal-loanBal;
+    const yRent = effectiveNetRent*Math.pow(1+rentGrowth/100,yr-1);
+    const yDeduct = totalDeduct*Math.pow(1+costInflation/100,yr-1);
+    const yPL = yRent-yDeduct;
+    const yTS = yPL<0?Math.abs(yPL)*effRate:0;
+    const yET = yPL>0?yPL*effRate:0;
+    const yNetCF = yRent+yTS-yET-annualMort;
+    let cumRent=0,cumTS=0,cumCF=0;
+    for (let j=0;j<yr;j++) {
+      const r=effectiveNetRent*Math.pow(1+rentGrowth/100,j);
+      const d=totalDeduct*Math.pow(1+costInflation/100,j);
+      const pl=r-d;
+      const ts=pl<0?Math.abs(pl)*effRate:0;
+      const et=pl>0?pl*effRate:0;
+      cumRent+=r;cumTS+=ts;cumCF+=r+ts-et-annualMort;
+    }
+    return {year:yr,projectedValue:Math.round(projVal),loanBalance:Math.round(loanBal),equity:Math.round(equity),yearRent:Math.round(yRent),yearNetCF:Math.round(yNetCF),cumRent:Math.round(cumRent),cumTaxSaving:Math.round(cumTS),cumNetCF:Math.round(cumCF)};
+  });
+
+  return {
+    purchasePrice,depositPct,interestRate,loanYears,ioYears,offsetBalance,
+    stampDutyAmount,fhogGrant,conveyancing,buildInsp,pestInsp,loanFee,otherBuying,capitalImprovements,
+    weeklyRent,vacancyWeeks,mgmtPct,rentalApportion,privateRoomPct,sharedAreaPct,
+    councilRates,waterRates,insurance,landlordIns,strata,maintenance,repairsReserve,
+    deprecClaim,accountingFees,electricityShared,otherOngoing,medicarePct,
+    salePrice,agentCommPct,sellLegals,yearsHeld,capGrowth,rentGrowth,costInflation,
+    selectedState: el('selectedState')?.value||'QLD',
+    deposit,loanAmt,effPrin,lvr,lmiAmt,mort,amort,annualInt,annualMort,
+    stampDuty,totalBuying,costBase,isPPOR,isPartial,isInvestment,apportion,guidedApportion,
+    grossRent,vacancyLoss,mgmtFees,effectiveNetRent,
+    ongoingFull,intDeduction,costDeduction,totalDeduct,
+    rentalPL,isNegGeared,effRate,taxSaving,extraTax,ownerTaxEffects,margRates,effRates,
+    cashPreTax,cashPostTax,grossYield,netYield,
+    agentFee,totalSellCosts,grossGain,cgtPayable,netSaleProc,projectionData,
+    pieCosts: [
+      {name:'Interest',value:Math.round(intDeduction),color:'#f85149'},
+      {name:'Rates',value:Math.round((councilRates+waterRates)*apportion),color:'#58a6ff'},
+      {name:'Insurance',value:Math.round((insurance+landlordIns)*apportion),color:'#9a6ad4'},
+      {name:'Strata',value:Math.round(strata*apportion),color:'#4ad4c8'},
+      {name:'Maint.',value:Math.round((maintenance+repairsReserve)*apportion),color:'#e3b341'},
+      {name:'Deprec.',value:Math.round(deprecClaim*apportion),color:'#d44a9a'},
+      {name:'Other',value:Math.round((accountingFees+electricityShared+otherOngoing)*apportion),color:'#6a8a6a'},
+    ].filter(d=>d.value>0),
+  };
+}
+
+// ── CHART HELPERS ──────────────────────────────────────────────────────────────
+const CHART_DEFAULTS = {
+  animation:false,
+  plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}},tooltip:{backgroundColor:'#161b22',borderColor:'#30363d',borderWidth:1,titleColor:'#8b949e',bodyColor:'#e6edf3',callbacks:{}}},
+  scales:{x:{grid:{color:'rgba(48,54,61,0.5)'},ticks:{color:'#8b949e',font:{size:9}}},y:{grid:{color:'rgba(48,54,61,0.5)'},ticks:{color:'#8b949e',font:{size:9}}}},
+};
+
+function mkChart(id, config) {
+  if (charts[id]) { charts[id].destroy(); }
+  const canvas = el(id);
+  if (!canvas) return;
+  charts[id] = new Chart(canvas, config);
+}
+
+function lineAreaDataset(label,data,color) {
+  return {label,data,borderColor:color,backgroundColor:color+'33',fill:true,borderWidth:2,pointRadius:0,tension:0.3};
+}
+
+// ── UPDATE DOM ─────────────────────────────────────────────────────────────────
+function calculate() {
+  C = compute();
+  updateHeader();
+  updateTab0();
+  updateTab1();
+  updateTab2();
+  updateTab3();
+  updateTab4();
+  updateTab5();
+}
+
+function updateHeader() {
+  setText('kpi-loan', fmtK(C.loanAmt));
+  setText('kpi-fnt', fmt(Math.round(C.mort.fortnightly)));
+  setText('kpi-stamp', fmt(Math.round(C.stampDuty)));
+  setText('kpi-rent', C.isPPOR ? 'N/A' : fmt(Math.round(C.effectiveNetRent)));
+  el('kpi-pl').textContent = C.isPPOR ? 'N/A' : fmt(Math.round(C.rentalPL));
+  el('kpi-pl').style.color = C.isNegGeared ? 'var(--red)' : 'var(--green)';
+  setText('kpi-taxsav', fmt(Math.round(C.taxSaving)));
+  setText('kpi-yield', C.isPPOR ? 'N/A' : pct(C.grossYield));
+  setText('kpi-cgt', fmt(Math.round(C.cgtPayable)));
+  setText('kpi-proceeds', fmtK(Math.round(C.netSaleProc)));
+
+  // stamp duty link
+  const slink = el('stamp-link');
+  if(slink) { slink.href=`https://www.google.com/search?q=${C.selectedState}+stamp+duty+calculator+revenue+office`; slink.textContent=`Find ${C.selectedState} stamp duty calculator →`; }
+}
+
+function updateTab0() {
+  // hints
+  setHTML('f-deposit-hint', `Deposit: ${fmt(C.deposit)} · LVR: ${pct(C.lvr)}`);
+  setHTML('f-offset-hint', `Effective principal: ${fmt(Math.round(C.effPrin))}`);
+
+  // LMI
+  if (C.lmiAmt > 0) {
+    el('lmi-warning').textContent = `⚠️ LVR > 80% — LMI estimated at ${fmt(Math.round(C.lmiAmt))} (2% of loan)`;
+    show('lmi-warning');
+  } else { hide('lmi-warning'); }
+
+  // FHOG hint
+  if (C.fhogGrant > 0) {
+    el('fhog-hint').textContent = `Net stamp duty payable: ${fmt(C.stampDuty)}`;
+    show('fhog-hint');
+  } else { hide('fhog-hint'); }
+
+  // repayment summary
+  setText('kc-monthly', fmt(Math.round(C.mort.piMonthly)));
+  setText('kc-fnt', fmt(Math.round(C.mort.fortnightly)));
+  setText('kc-totalint', fmtK(Math.round(C.mort.totalInterest)));
+  setText('kc-totalbuying', fmtK(Math.round(C.totalBuying)));
+  setText('cb-val', fmt(Math.round(C.costBase)));
+
+  // Amort chart
+  mkChart('chart-amort', {
+    type:'line',
+    data:{
+      labels: C.amort.map(d=>d.year),
+      datasets:[
+        lineAreaDataset('Loan Balance', C.amort.map(d=>d.balance), '#f85149'),
+        lineAreaDataset('Principal Repaid', C.amort.map(d=>d.principal), '#3fb68a'),
+      ]
+    },
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:3,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},
+      scales:{...CHART_DEFAULTS.scales,y:{...CHART_DEFAULTS.scales.y,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}}},
+    }
+  });
+
+  // Int vs principal (first 15 years)
+  const amort15 = C.amort.slice(0,15);
+  mkChart('chart-intprin', {
+    type:'bar',
+    data:{labels:amort15.map(d=>d.year),datasets:[
+      {label:'Interest',data:amort15.map(d=>d.interest),backgroundColor:'#f85149',borderRadius:3,stack:'a'},
+      {label:'Principal',data:amort15.map(d=>d.principal),backgroundColor:'#3fb68a',borderRadius:3,stack:'a'},
+    ]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2.2,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},
+      scales:{...CHART_DEFAULTS.scales,x:{stacked:true,...CHART_DEFAULTS.scales.x},y:{stacked:true,...CHART_DEFAULTS.scales.y,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}}},
+    }
+  });
+
+  // Buying costs pie
+  const buyPieData = [
+    {label:'Purchase Price',value:C.purchasePrice,color:'#58a6ff'},
+    {label:'Stamp Duty',value:C.stampDuty,color:'#f85149'},
+    {label:'Conveyancing',value:C.conveyancing,color:'#e3b341'},
+    {label:'Inspections',value:C.buildInsp+C.pestInsp,color:'#bc8cff'},
+    {label:'Other',value:C.loanFee+C.otherBuying+C.lmiAmt,color:'#8b949e'},
+  ].filter(d=>d.value>0);
+  mkChart('chart-buying-pie', {
+    type:'doughnut',
+    data:{labels:buyPieData.map(d=>d.label),datasets:[{data:buyPieData.map(d=>d.value),backgroundColor:buyPieData.map(d=>d.color),borderColor:'#1c2128',borderWidth:2}]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.raw)}`}}},
+      scales:{}
+    }
+  });
+}
+
+function updateTab1() {
+  // PPOR notice
+  if (C.isPPOR) { show('ppor-notice'); hide('rental-income-fields'); el('rent-kpi-grid').style.display='none'; }
+  else { hide('ppor-notice'); show('rental-income-fields'); el('rent-kpi-grid').style.display='grid'; }
+
+  // Rent hints
+  setHTML('f-rent-hint', `Gross annual rent: ${fmt(Math.round(C.grossRent))}`);
+  setHTML('f-vacancy-hint', `Vacancy loss: ${fmt(Math.round(C.vacancyLoss))}/yr`);
+
+  // Rent KPI cards
+  setText('kc-grossrent', fmt(Math.round(C.grossRent)));
+  setText('kc-netrent', fmt(Math.round(C.effectiveNetRent)));
+  setText('kc-grossyield', pct(C.grossYield));
+  setText('kc-netyield', pct(C.netYield));
+
+  // Apportionment section
+  if (C.isPartial) { show('apportionment-section'); }
+  else { hide('apportionment-section'); }
+
+  // Guided ATO calc
+  const guided = Math.min(100, C.privateRoomPct + C.sharedAreaPct*0.5);
+  setText('ato-calc-pct', pct(guided,1));
+  setText('ato-calc-formula', `${pct(C.privateRoomPct,1)} + ${pct(C.sharedAreaPct,1)} × 50% = ${pct(guided,1)}`);
+
+  // Apportion badge
+  const ab = el('apportion-badge');
+  if(ab) ab.innerHTML = `✅ <strong style="color:var(--blue)">${pct(C.rentalApportion,1)}</strong> of expenses are deductible for tax purposes.`;
+
+  // Ongoing costs
+  setText('row-ongoing', fmt(Math.round(C.ongoingFull)));
+  const rd = el('row-deductible');
+  if(rd) { rd.textContent = fmt(Math.round(C.costDeduction)); }
+  const rdw = el('row-deductible-wrap');
+  if(rdw && !C.isPPOR) {
+    rdw.querySelector('.row-label').textContent = `Deductible portion (${pct(C.apportion*100,1)})`;
+    show('row-deductible-wrap');
+  }
+
+  // Cost pie
+  mkChart('chart-cost-pie', {
+    type:'doughnut',
+    data:{labels:C.pieCosts.map(d=>d.name),datasets:[{data:C.pieCosts.map(d=>d.value),backgroundColor:C.pieCosts.map(d=>d.color),borderColor:'#1c2128',borderWidth:2}]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:1.8,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.raw)}`}}},
+      scales:{}
+    }
+  });
+
+  // Income vs expenses bar
+  const incData = [
+    {label:'Gross Rent',val:Math.round(C.grossRent),color:'#3fb68a'},
+    {label:'Net Rent',val:Math.round(C.effectiveNetRent),color:'#3fb68a'},
+    {label:'Total Costs',val:Math.round(C.ongoingFull),color:'#f85149'},
+    {label:'Deductible',val:Math.round(C.costDeduction+C.intDeduction),color:'#e3b341'},
+  ];
+  mkChart('chart-income-bar', {
+    type:'bar',
+    data:{labels:incData.map(d=>d.label),datasets:[{data:incData.map(d=>d.val),backgroundColor:incData.map(d=>d.color),borderRadius:4}]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2,indexAxis:'y',
+      plugins:{...CHART_DEFAULTS.plugins,legend:{display:false},tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${fmt(ctx.raw)}`}}},
+      scales:{x:{...CHART_DEFAULTS.scales.x,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}},y:{...CHART_DEFAULTS.scales.y}},
+    }
+  });
+}
+
+function updateTab2() {
+  // Number-of-owners buttons
+  const noDiv = el('num-owners-btns');
+  if(noDiv) {
+    noDiv.innerHTML = [1,2,3,4].map(n=>`
+      <button class="num-owners-btn ${numOwners===n?'active':''}" 
+        style="${numOwners===n?`background:${OWNER_COLORS[n-1]};border-color:${OWNER_COLORS[n-1]};color:#0d1117`:'color:var(--text-dim)'}" 
+        onclick="setNumOwners(${n})">${n}</button>`).join('');
+  }
+  setText('owners-split-note', `Rental profit/loss is split equally (${pct(100/numOwners,1)} each)`);
+
+  // Owner income fields
+  const oif = el('owner-income-fields');
+  if(oif) {
+    oif.innerHTML = Array.from({length:numOwners}).map((_,i)=>{
+      const te = C.ownerTaxEffects[i];
+      const tagHtml = te ? `<div style="font-size:11px;padding:6px 10px;background:${C.isNegGeared?'var(--gold-bg)':'var(--red-bg)'};border-radius:5px;color:${C.isNegGeared?'var(--gold)':'var(--red)'}">
+        Share of ${C.isNegGeared?'loss':'surplus'}: ${fmt(Math.round(Math.abs(te.share)))} →
+        ${C.isNegGeared?`Tax saving: ${fmt(Math.round(te.taxSaving))}/yr`:`Extra tax: ${fmt(Math.round(te.extraTax))}/yr`}
+      </div>` : '';
+      return `<div class="owner-card" style="border-left:3px solid ${OWNER_COLORS[i]}">
+        <div style="font-size:11px;color:${OWNER_COLORS[i]};font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">👤 Owner ${i+1} ${numOwners===1?'(Sole Owner)':''}</div>
+        <div class="field"><label>Annual Employment Income</label><div class="input-wrap"><span class="pre">$</span>
+          <input class="has-pre" type="number" value="${ownerIncomes[i]||0}" step="1000" min="0" oninput="setOwnerIncome(${i},this.value);calculate()">
+        </div>
+        <div class="hint">Marginal rate: ${pct(getMarginalRate(ownerIncomes[i]||0)*100,0)} · Effective incl. Medicare: ${pct((getMarginalRate(ownerIncomes[i]||0)+C.medicarePct/100)*100,1)}</div></div>
+        ${tagHtml}
+      </div>`;
+    }).join('');
+  }
+
+  // Combined income
+  setText('combined-income', fmt(ownerIncomes.slice(0,numOwners).reduce((s,v)=>s+(v||0),0)));
+
+  // Owner legend
+  const ol = el('owner-legend');
+  if(ol) {
+    ol.innerHTML = Array.from({length:numOwners}).map((_,i)=>
+      `<div class="owner-badge" style="color:${OWNER_COLORS[i]};background:${OWNER_COLORS[i]}22">O${i+1}: ${fmt(ownerIncomes[i]||0)}</div>`
+    ).join('');
+  }
+
+  // ATO bracket table
+  const bt = el('bracket-table');
+  if(bt) {
+    bt.innerHTML = TAX_BRACKETS.map((b,bi)=>{
+      const owners = Array.from({length:numOwners}).map((_,oi)=>{
+        const inc=ownerIncomes[oi]||0;
+        return inc>b.from&&(b.to===null||inc<=b.to);
+      });
+      const anyMatch = owners.some(Boolean);
+      const range = b.to===null?`$${b.from.toLocaleString()}+`:`$${b.from.toLocaleString()} – $${b.to.toLocaleString()}`;
+      const badges = owners.map((match,oi)=>match?`<span style="font-size:9px;background:${OWNER_COLORS[oi]};color:#0d1117;border-radius:3px;padding:1px 5px;font-weight:700">O${oi+1}</span>`:'').join('');
+      return `<div class="bracket-row" style="${anyMatch?'background:var(--gold-bg);border:1px solid var(--gold)':''}">
+        <span style="font-size:12px;color:${anyMatch?'var(--text)':'var(--text-dim)'}">${range}</span>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="font-size:12px;color:${anyMatch?'var(--gold)':'var(--text-muted)'};font-weight:${anyMatch?700:400}">${b.rate}%</span>
+          ${badges}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Rental P&L rows
+  setText('row-grossrent', fmt(Math.round(C.grossRent)));
+  setText('row-vacancy', `(${fmt(Math.round(C.vacancyLoss))})`);
+  setText('row-mgmt', `(${fmt(Math.round(C.mgmtFees))})`);
+  setText('row-netrent', fmt(Math.round(C.effectiveNetRent)));
+  setText('row-intdeduct', `(${fmt(Math.round(C.intDeduction))})`);
+  el('row-int-sub').textContent = C.isPartial ? `${fmt(Math.round(C.annualInt))} × ${pct(C.rentalApportion,1)} apportionment` : '';
+  setText('row-costdeduct', `(${fmt(Math.round(C.costDeduction))})`);
+  const rpl = el('row-rentalpl');
+  if(rpl) { rpl.textContent = fmt(Math.round(C.rentalPL)); rpl.style.color = C.isNegGeared?'var(--red)':'var(--green)'; }
+
+  // Gearing box
+  const gb = el('gearing-box');
+  if(gb) {
+    gb.style.background = C.isNegGeared?'var(--red-bg)':'var(--green-bg)';
+    gb.style.border = `1px solid ${C.isNegGeared?'var(--red)':'var(--green)'}`;
+    const n = numOwners;
+    if(C.isNegGeared) {
+      gb.innerHTML = `<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:6px">📉 Negatively Geared</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:10px">Total rental loss of ${fmt(Math.round(Math.abs(C.rentalPL)))} split equally across ${n} owner${n>1?'s':''} → total tax saving: <strong style="color:var(--gold);font-size:15px">${fmt(Math.round(C.taxSaving))}/yr</strong></div>`;
+    } else {
+      gb.innerHTML = `<div style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:6px">📈 Positively Geared</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:10px">Total rental surplus of ${fmt(Math.round(C.rentalPL))} split across ${n} owner${n>1?'s':''} → additional tax: <strong style="color:var(--red);font-size:15px">${fmt(Math.round(C.extraTax))}/yr</strong></div>`;
+    }
+  }
+
+  // Owner breakdown grid
+  const obg = el('owner-breakdown-grid');
+  if(obg) {
+    const cols = Math.min(numOwners,2);
+    obg.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+    obg.innerHTML = C.ownerTaxEffects.map((oe,i)=>`
+      <div class="owner-breakdown-card" style="border-left:3px solid ${OWNER_COLORS[i]}">
+        <div class="obc-title" style="color:${OWNER_COLORS[i]}">👤 Owner ${i+1} (${pct(oe.margRate*100,0)} rate)</div>
+        <div class="obc-share">Share: ${fmt(Math.round(Math.abs(oe.share)))}</div>
+        <div class="obc-result" style="color:${C.isNegGeared?'var(--gold)':'var(--red)'}">
+          ${C.isNegGeared?`Saving: ${fmt(Math.round(oe.taxSaving))}`:`Extra tax: ${fmt(Math.round(oe.extraTax))}`}
+        </div>
+      </div>`).join('');
+  }
+
+  // Cash flow rows
+  setText('cf-netrent', fmt(Math.round(C.effectiveNetRent)));
+  setText('cf-mort', `(${fmt(Math.round(C.annualMort))})`);
+  const cfpre = el('cf-pretax');
+  if(cfpre) { cfpre.textContent=fmt(Math.round(C.cashPreTax)); cfpre.style.color=C.cashPreTax>=0?'var(--green)':'var(--red)'; }
+  setText('cf-taxlabel', C.isNegGeared?'Tax saving (neg. gearing)':'Extra tax payable');
+  const cfta = el('cf-taxval');
+  if(cfta) { cfta.textContent=C.isNegGeared?fmt(Math.round(C.taxSaving)):`(${fmt(Math.round(C.extraTax))})`; cfta.style.color=C.isNegGeared?'var(--green)':'var(--red)'; }
+  const cfpost = el('cf-posttax');
+  if(cfpost) { cfpost.textContent=fmt(Math.round(C.cashPostTax)); cfpost.style.color=C.cashPostTax>=0?'var(--green)':'var(--red)'; }
+
+  // Cumulative rent chart
+  const cumData = Array.from({length:10},(_,i)=>({year:`Y${i+1}`,rent:Math.round(C.effectiveNetRent*(i+1)),taxSaving:Math.round(C.taxSaving*(i+1))}));
+  const crs = el('chart-cumrent-section');
+  if(crs) crs.style.display = C.isPPOR?'none':'block';
+  mkChart('chart-cumrent', {
+    type:'bar',
+    data:{labels:cumData.map(d=>d.year),datasets:[
+      {label:'Cum. Rent',data:cumData.map(d=>d.rent),backgroundColor:'#3fb68a',borderRadius:3},
+      {label:'Cum. Tax Sav.',data:cumData.map(d=>d.taxSaving),backgroundColor:'#e3b341',borderRadius:3},
+    ]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2.2,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},
+      scales:{...CHART_DEFAULTS.scales,y:{...CHART_DEFAULTS.scales.y,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}}},
+    }
+  });
+
+  // Tax rate comparison
+  const trData = Array.from({length:numOwners},(_,i)=>({
+    name:`Owner ${i+1}`,
+    margRate:getMarginalRate(ownerIncomes[i]||0)*100,
+    effRate:(getMarginalRate(ownerIncomes[i]||0)+C.medicarePct/100)*100,
+  }));
+  mkChart('chart-taxrate', {
+    type:'bar',
+    data:{labels:trData.map(d=>d.name),datasets:[
+      {label:'Marginal Rate %',data:trData.map(d=>d.margRate),backgroundColor:'#e3b341',borderRadius:3},
+      {label:'Effective Rate %',data:trData.map(d=>d.effRate),backgroundColor:'#58a6ff',borderRadius:3},
+    ]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2.2,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`}}},
+      scales:{...CHART_DEFAULTS.scales,y:{...CHART_DEFAULTS.scales.y,ticks:{color:'#8b949e',font:{size:9},callback:v=>`${v}%`}}},
+    }
+  });
+}
+
+function updateTab3() {
+  setText('f-agentfee-hint', `Agent fee: ${fmt(Math.round(C.agentFee))}`);
+  el('f-cgt-discount-hint').textContent = C.yearsHeld>=1?'50% CGT discount applies (held 12+ months)':'No CGT discount (held less than 12 months)';
+
+  setText('cgt-saleprice', fmt(C.salePrice));
+  setText('cgt-sellcosts', `(${fmt(Math.round(C.totalSellCosts))})`);
+  setText('cgt-costbase', `(${fmt(Math.round(C.costBase))})`);
+  const cgg = el('cgt-grossgain');
+  if(cgg) { cgg.textContent=fmt(Math.round(C.grossGain)); cgg.style.color=C.grossGain>0?'var(--gold)':'var(--red)'; }
+
+  if(C.isPartial) {
+    show('cgt-apportion-row');
+    el('cgt-apportion-label').textContent=`Apportioned (${pct(C.apportion*100,1)})`;
+    setText('cgt-apportion-val', fmt(Math.round(C.grossGain*C.apportion)));
+  } else { hide('cgt-apportion-row'); }
+
+  if(C.yearsHeld>=1&&C.grossGain>0) {
+    show('cgt-discount-row');
+    setText('cgt-discount-val', `(${fmt(Math.round(C.grossGain*C.apportion*0.5))})`);
+  } else { hide('cgt-discount-row'); }
+
+  setText('cgt-taxable', fmt(Math.round(C.grossGain>0?C.grossGain*C.apportion*(C.yearsHeld>=1?0.5:1):0)));
+  setText('cgt-payable', `(${fmt(Math.round(C.cgtPayable))})`);
+  setText('net-proceeds-val', fmtK(Math.round(C.netSaleProc)));
+
+  // Waterfall bar
+  const wfData = [
+    {name:'Sale Price',val:C.salePrice,color:'#3fb68a'},
+    {name:'Sell Costs',val:-Math.round(C.totalSellCosts),color:'#f85149'},
+    {name:'Loan Repaid',val:-Math.round(C.loanAmt),color:'#f85149'},
+    {name:'CGT',val:-Math.round(C.cgtPayable),color:'#f0932b'},
+    {name:'Net Proceeds',val:Math.round(C.netSaleProc),color:'#e3b341'},
+  ];
+  mkChart('chart-waterfall', {
+    type:'bar', indexAxis:'y',
+    data:{labels:wfData.map(d=>d.name),datasets:[{data:wfData.map(d=>d.val),backgroundColor:wfData.map(d=>d.color),borderRadius:4}]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2,
+      plugins:{...CHART_DEFAULTS.plugins,legend:{display:false},tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${fmt(Math.abs(ctx.raw))}`}}},
+      scales:{x:{...CHART_DEFAULTS.scales.x,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}},y:{...CHART_DEFAULTS.scales.y}},
+    }
+  });
+
+  // CGT pie
+  const cgtPieData = [
+    {name:'Cost Base',value:Math.round(C.costBase),color:'#58a6ff'},
+    {name:'Taxable Gain',value:Math.max(0,Math.round(C.grossGain>0?C.grossGain*C.apportion*(C.yearsHeld>=1?0.5:1):0)),color:'#e3b341'},
+    {name:'CGT Discount',value:Math.max(0,Math.round(C.grossGain>0?C.grossGain*C.apportion*0.5:0)),color:'#3fb68a'},
+    {name:'Sell Costs',value:Math.round(C.totalSellCosts),color:'#f85149'},
+  ].filter(d=>d.value>0);
+  mkChart('chart-cgt-pie', {
+    type:'doughnut',
+    data:{labels:cgtPieData.map(d=>d.name),datasets:[{data:cgtPieData.map(d=>d.value),backgroundColor:cgtPieData.map(d=>d.color),borderColor:'#1c2128',borderWidth:2}]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:1.8,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.raw)}`}}},
+      scales:{}
+    }
+  });
+}
+
+function updateTab4() {
+  const pd = C.projectionData;
+
+  mkChart('chart-proj-value', {
+    type:'line',
+    data:{labels:pd.map(d=>d.year),datasets:[
+      lineAreaDataset('Property Value',pd.map(d=>d.projectedValue),'#e3b341'),
+      lineAreaDataset('Equity',pd.map(d=>d.equity),'#3fb68a'),
+    ]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2.2,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtK(ctx.raw)}`}}},
+      scales:{...CHART_DEFAULTS.scales,y:{...CHART_DEFAULTS.scales.y,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}}},
+    }
+  });
+
+  mkChart('chart-proj-cf', {
+    type:'bar',
+    data:{labels:pd.map(d=>d.year),datasets:[
+      {label:'Cum. Rent',data:pd.map(d=>d.cumRent),backgroundColor:'#3fb68a',borderRadius:2},
+      {label:'Cum. Tax Sav.',data:pd.map(d=>d.cumTaxSaving),backgroundColor:'#e3b341',borderRadius:2},
+      {type:'line',label:'Cum. Net CF',data:pd.map(d=>d.cumNetCF),borderColor:'#58a6ff',borderWidth:2,pointRadius:0,tension:0.3,fill:false},
+    ]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2.2,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtK(ctx.raw)}`}}},
+      scales:{...CHART_DEFAULTS.scales,y:{...CHART_DEFAULTS.scales.y,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}}},
+    }
+  });
+
+  // Table
+  const tbody = el('proj-table')?.querySelector('tbody');
+  if(tbody) {
+    tbody.innerHTML = pd.map((row,i)=>{
+      const isHeld = row.year===C.yearsHeld;
+      return `<tr class="${isHeld?'highlight':i%2===0?'alt':''}">
+        <td style="color:${isHeld?'var(--gold)':'var(--text-dim)'};font-weight:${isHeld?700:400}">Y${row.year}${isHeld?' ← sale':''}</td>
+        <td style="color:var(--gold)">${fmtK(row.projectedValue)}</td>
+        <td style="color:var(--red)">${fmtK(row.loanBalance)}</td>
+        <td style="color:var(--green)">${fmtK(row.equity)}</td>
+        <td style="color:var(--green)">${fmt(row.yearRent)}</td>
+        <td style="color:${row.yearNetCF>=0?'var(--green)':'var(--red)'}">${fmt(row.yearNetCF)}</td>
+        <td style="color:${row.cumNetCF>=0?'var(--green)':'var(--red)'}">${fmtK(row.cumNetCF)}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function updateTab5() {
+  const pd = C.projectionData;
+  const lastYear = pd[Math.min(C.yearsHeld,pd.length)-1];
+
+  // KPI grid
+  const kpiGrid = el('summary-kpi-grid');
+  if(kpiGrid) {
+    const kpis = [
+      {label:'Purchase Price',val:fmt(C.purchasePrice),color:'var(--text)'},
+      {label:'Loan Amount',val:fmtK(C.loanAmt),sub:`${pct(C.lvr)} LVR`,color:'var(--blue)'},
+      {label:'Stamp Duty',val:fmt(Math.round(C.stampDuty)),sub:C.selectedState,color:'var(--red)'},
+      {label:'Total Buying Costs',val:fmtK(Math.round(C.totalBuying)),color:'var(--red)'},
+      {label:'Fortnightly Repmt',val:fmt(Math.round(C.mort.fortnightly)),color:'var(--text)'},
+      {label:'Total Interest',val:fmtK(Math.round(C.mort.totalInterest)),color:'var(--red)'},
+      ...(!C.isPPOR?[
+        {label:'Gross Annual Rent',val:fmt(Math.round(C.grossRent)),color:'var(--green)'},
+        {label:'Net Rent/yr',val:fmt(Math.round(C.effectiveNetRent)),sub:'After vacancy & fees',color:'var(--green)'},
+        {label:'Gross Yield',val:pct(C.grossYield),color:'var(--blue)'},
+        {label:'Net Yield',val:pct(C.netYield),color:'var(--blue)'},
+      ]:[]),
+      {label:`Tax Rates (${numOwners} owner${numOwners>1?'s':''})`,val:Array.from({length:numOwners}).map((_,i)=>pct(getMarginalRate(ownerIncomes[i]||0)*100,0)).join(' / '),sub:`+${pct(C.medicarePct,0)} Medicare each`,color:'var(--gold)'},
+      ...(!C.isPPOR?[
+        {label:'Rental P&L',val:fmt(Math.round(C.rentalPL)),sub:C.isNegGeared?'Negatively Geared':'Positively Geared',color:C.isNegGeared?'var(--red)':'var(--green)'},
+        {label:'Tax Saving/yr',val:fmt(Math.round(C.taxSaving)),color:'var(--gold)'},
+      ]:[]),
+      {label:'Pre-Tax Cash Flow',val:fmt(Math.round(C.cashPreTax)),color:C.cashPreTax>=0?'var(--green)':'var(--red)'},
+      {label:'Post-Tax Cash Flow',val:fmt(Math.round(C.cashPostTax)),color:C.cashPostTax>=0?'var(--green)':'var(--red)'},
+      {label:'Cost Base',val:fmtK(Math.round(C.costBase)),color:'var(--text)'},
+      {label:'CGT on Sale',val:fmt(Math.round(C.cgtPayable)),sub:`${C.yearsHeld}yr hold`,color:'var(--red)'},
+      {label:'Net Sale Proceeds',val:fmtK(Math.round(C.netSaleProc)),color:'var(--green)'},
+      ...(!C.isPPOR?[
+        {label:`${C.yearsHeld}yr Cum. Rent`,val:fmtK(Math.round(lastYear?.cumRent||0)),color:'var(--green)'},
+        {label:`${C.yearsHeld}yr Tax Savings`,val:fmtK(Math.round(lastYear?.cumTaxSaving||0)),color:'var(--gold)'},
+        {label:`${C.yearsHeld}yr Net Cash Flow`,val:fmtK(Math.round(lastYear?.cumNetCF||0)),color:(lastYear?.cumNetCF||0)>=0?'var(--green)':'var(--red)'},
+      ]:[]),
+    ];
+    kpiGrid.innerHTML = kpis.map(k=>`
+      <div class="kpi-card" style="border-top-color:${k.color}">
+        <div class="kc-label">${k.label}</div>
+        <div class="kc-val" style="color:${k.color}">${k.val}</div>
+        ${k.sub?`<div class="kc-sub">${k.sub}</div>`:''}
+      </div>`).join('');
+  }
+
+  // Summary CF bar
+  const cfData = [
+    {name:'Gross Rent',val:Math.round(C.grossRent),color:'#3fb68a'},
+    {name:'Net Rent',val:Math.round(C.effectiveNetRent),color:'#3fb68a'},
+    {name:'Mortgage',val:-Math.round(C.annualMort),color:'#f85149'},
+    {name:'Pre-Tax CF',val:Math.round(C.cashPreTax),color:C.cashPreTax>=0?'#58a6ff':'#f85149'},
+    {name:'Tax Saving',val:Math.round(C.taxSaving),color:'#e3b341'},
+    {name:'Post-Tax CF',val:Math.round(C.cashPostTax),color:C.cashPostTax>=0?'#3fb68a':'#f85149'},
+  ];
+  mkChart('chart-summary-cf', {
+    type:'bar', indexAxis:'y',
+    data:{labels:cfData.map(d=>d.name),datasets:[{data:cfData.map(d=>d.val),backgroundColor:cfData.map(d=>d.color),borderRadius:4}]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2,
+      plugins:{...CHART_DEFAULTS.plugins,legend:{display:false},tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${fmt(ctx.raw)}`}}},
+      scales:{x:{...CHART_DEFAULTS.scales.x,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}},y:{...CHART_DEFAULTS.scales.y}},
+    }
+  });
+
+  // Equity trajectory
+  const pd10 = pd.slice(0,10);
+  mkChart('chart-summary-equity', {
+    type:'line',
+    data:{labels:pd10.map(d=>d.year),datasets:[
+      lineAreaDataset('Property Value',pd10.map(d=>d.projectedValue),'#e3b341'),
+      lineAreaDataset('Equity',pd10.map(d=>d.equity),'#3fb68a'),
+    ]},
+    options:{...CHART_DEFAULTS,responsive:true,maintainAspectRatio:true,aspectRatio:2.2,
+      plugins:{...CHART_DEFAULTS.plugins,tooltip:{...CHART_DEFAULTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtK(ctx.raw)}`}}},
+      scales:{...CHART_DEFAULTS.scales,y:{...CHART_DEFAULTS.scales.y,ticks:{color:'#8b949e',font:{size:9},callback:v=>fmtK(v)}}},
+    }
+  });
+
+  // Checklist
+  const cl = el('checklist');
+  if(cl) {
+    const items = [
+      {done:C.loanAmt>0,l:'Loan structure confirmed with lender'},
+      {done:C.insurance>0,l:'Home insurance in place'},
+      {done:!C.isPPOR&&C.weeklyRent>0,l:'Rental agreement / market rent confirmed',skip:C.isPPOR},
+      {done:!C.isPPOR&&C.vacancyWeeks>0,l:'Vacancy allowance budgeted',skip:C.isPPOR},
+      {done:C.deprecClaim>0,l:'Depreciation schedule obtained (QS report)',skip:C.isPPOR},
+      {done:C.accountingFees>0,l:'Accountant / tax agent engaged'},
+      {done:C.totalBuying>0,l:'All buying costs captured in cost base'},
+      {done:C.yearsHeld>=1,l:'Holding 12+ months for 50% CGT discount'},
+      {done:C.offsetBalance>=0,l:'Offset account considered'},
+      {done:ownerIncomes.slice(0,numOwners).every(v=>v>0),l:`Individual marginal tax rates confirmed (${numOwners} owner${numOwners>1?'s':''})`},
+      {done:C.capGrowth>0,l:'Capital growth scenario set'},
+      {done:C.stampDutyAmount>0,l:`Stamp duty verified with ${C.selectedState} revenue office`},
+    ].filter(x=>!x.skip);
+    cl.innerHTML = items.map(item=>`
+      <div class="checklist-item">
+        <span class="ci-icon">${item.done?'✅':'⬜'}</span>
+        <span class="ci-label" style="color:${item.done?'var(--text-dim)':'var(--text)'}">${item.l}</span>
+      </div>`).join('');
+  }
+}
+
+// ── ACTIONS ────────────────────────────────────────────────────────────────────
+function setTab(i) {
+  currentTab = i;
+  document.querySelectorAll('.tab-panel').forEach((p,j)=>p.classList.toggle('active',j===i));
+  document.querySelectorAll('.tab-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+}
+
+function setPropType(type) {
+  propType = type;
+  document.querySelectorAll('.prop-type-btn').forEach(b=>b.classList.toggle('active',b.dataset.type===type));
+  calculate();
+}
+
+function setNumOwners(n) {
+  numOwners = n;
+  calculate();
+}
+
+function setOwnerIncome(idx, val) {
+  ownerIncomes[idx] = parseFloat(val)||0;
+}
+
+function setApportionMode(mode) {
+  apportionMode = mode;
+  el('tog-manual').classList.toggle('active', mode==='manual');
+  el('tog-guided').classList.toggle('active', mode==='guided');
+  if(mode==='guided') show('guided-panel'); else hide('guided-panel');
+}
+
+function applyAtoResult() {
+  const guided = Math.min(100, v('privateRoomPct') + v('sharedAreaPct')*0.5);
+  el('rentalApportion').value = guided.toFixed(1);
+  setApportionMode('manual');
+  calculate();
+}
+
+const DEFAULTS = {
+  purchasePrice:935000,depositPct:20,interestRate:6.22,loanYears:30,ioYears:0,offsetBalance:0,
+  selectedState:'QLD',stampDutyAmount:29925,fhogGrant:0,conveyancing:2500,buildInsp:600,pestInsp:400,loanFee:800,otherBuying:900,
+  weeklyRent:230,vacancyWeeks:2,mgmtPct:0,
+  rentalApportion:26.6,privateRoomPct:15,sharedAreaPct:23,
+  councilRates:2200,waterRates:1200,insurance:2400,landlordIns:0,strata:0,maintenance:800,
+  repairsReserve:500,deprecClaim:1200,accountingFees:500,electricityShared:3600,otherOngoing:500,
+  numOwners:2,ownerIncomes:[90000,125000,0,0],medicarePct:2,
+  salePrice:1250000,agentCommPct:2.5,sellLegals:3000,capitalImprovements:0,yearsHeld:5,
+  capGrowth:5,rentGrowth:3,costInflation:2.5,
+};
+
+function setVal(id, val) { const e=el(id); if(e) e.value=val; }
+
+function resetTab(t) {
+  if(t===0) {
+    ['purchasePrice','depositPct','interestRate','loanYears','ioYears','offsetBalance',
+     'stampDutyAmount','fhogGrant','conveyancing','buildInsp','pestInsp','loanFee','otherBuying'].forEach(k=>setVal(k,DEFAULTS[k]));
+    setVal('selectedState','QLD');
+  } else if(t===1) {
+    ['weeklyRent','vacancyWeeks','mgmtPct','rentalApportion','privateRoomPct','sharedAreaPct',
+     'councilRates','waterRates','insurance','landlordIns','strata','maintenance',
+     'repairsReserve','deprecClaim','accountingFees','electricityShared','otherOngoing'].forEach(k=>setVal(k,DEFAULTS[k]));
+  } else if(t===2) {
+    numOwners = DEFAULTS.numOwners;
+    ownerIncomes = [...DEFAULTS.ownerIncomes];
+    setVal('medicarePct',DEFAULTS.medicarePct);
+  } else if(t===3) {
+    ['salePrice','agentCommPct','sellLegals','capitalImprovements','yearsHeld'].forEach(k=>setVal(k,DEFAULTS[k]));
+  } else if(t===4) {
+    ['capGrowth','rentGrowth','costInflation'].forEach(k=>setVal(k,DEFAULTS[k]));
+  }
+  calculate();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+calculate();
+</script>
+</body>
+</html>
